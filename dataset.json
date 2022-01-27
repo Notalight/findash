@@ -1,0 +1,49 @@
+{
+    "accounts": [
+        {
+            "name": "AXA Compte Commun",
+            "iban": "FR76 XXXXXXXXX",
+            "bank": "AXA Banque"
+        },
+        {
+            "name": "AXA Chris",
+            "iban": "FR76 XXXXXXXXX",
+            "bank": "AXA Banque"
+        },
+        {
+            "name": "CA Commun",
+            "iban": "FR76 XXXXXXXXX",
+            "bank": "Crédit Agricole"
+        },
+        {
+            "name": "CA Chris",
+            "iban": "FR76 XXXXXXXXX",
+            "bank": "Crédit Agricole"
+        },
+        {
+            "name": "Wize EUR",
+            "iban": "FR76 XXXXXXXXX",
+            "bank": "Wise"
+        },
+        {
+            "name": "Wize DOLLAR",
+            "iban": "FR76 XXXXXXXXX",
+            "bank": "Wise"
+        },
+        {
+            "name": "N26",
+            "iban": "FR76 XXXXXXXXX",
+            "bank": "N26"
+        },
+        {
+            "name": "Banque Direct / PEA",
+            "iban": "FR76 XXXXXXXXX",
+            "bank": "Banque Direct"
+        },
+        {
+            "name": "Banque Direct / Titre",
+            "iban": "FR76 XXXXXXXXX",
+            "bank": "Banque Direct"
+        }
+    ]
+}
