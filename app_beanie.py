@@ -120,7 +120,7 @@ def convert_to_dataframe(stocks):
     df = pd.DataFrame (stocks_list).transpose()
     df.columns = ['ticker', 'qty']
     #df.columns = ['ticker', 'qty','unit price', 'currency', 'total']
-    print (df)
+    #print (df)
     return df
     
 async def init():
