@@ -6,7 +6,7 @@ from rich.console import Console
 
 from typing import Optional
 from pydantic import BaseModel
-from beanie import Document, Indexed, init_beanie
+from beanie import Document, Indexed, Link,  init_beanie
 from beanie.exceptions import CollectionWasNotInitialized
 import asyncio
 import motor
@@ -39,15 +39,20 @@ class Account(Document):
 
 
 class Stock(Document):
+    order_number: str
     name: str
     symbol: str
     market: str
     qty: float
-#    purchase_date : datetime.date
+    purchase_date: str #datetime.date
     purchase_price: float = 0.0
-#    selling_date : Optional[datetime.date]
+    selling_date: Optional[str] #datetime.date]
     selling_price: Optional[float] = 0.0
     currency: str = "EUR"
+    change_rate: Optional[float] = 1.0
+    fees: float = 0.0
+    currency_fees: str
+    account:  Link[Account]
 
     class Collection:
         name = "stocks"
@@ -77,7 +82,8 @@ def format_currency(value, currency):
 def display_accounts(accounts):
     # Format table to show
     table = rich.table.Table(title="Accounts")
-    table.add_column("Référence", justify="right", style="cyan", no_wrap=True)
+    table.add_column("RÃ©fÃ©rence", justify="right",
+                     style="cyan", no_wrap=True)
     table.add_column("Nom", style="magenta")
     table.add_column("Banque", style="magenta")
     table.add_column("Type", style="magenta")
@@ -110,19 +116,21 @@ def display_stocks(stocks):
     console = Console()
     console.print(table)
 
+
 def convert_to_dataframe(stocks):
-    symbols =[]
+    symbols = []
     quantities = []
     for stock in stocks:
         symbols.append(stock.symbol)
         quantities.append(stock.qty)
     stocks_list = [symbols, quantities]
-    df = pd.DataFrame (stocks_list).transpose()
+    df = pd.DataFrame(stocks_list).transpose()
     df.columns = ['ticker', 'qty']
     #df.columns = ['ticker', 'qty','unit price', 'currency', 'total']
     #print (df)
     return df
-    
+
+
 async def init():
     # Crete Motor client
     client = motor.motor_asyncio.AsyncIOMotorClient(
@@ -146,29 +154,102 @@ async def init():
     bd2 = Account(name="Banque Direct - Titre",
                   account_number="508TI00085561050EUR",
                   type="Titre", bank_name="Bourse Direct")
+
+    axa1 = Account(name="Banque Direct - PEA",
+                   account_number="508TI00083401569EUR",
+                   type="PEA", bank_name="Bourse Direct")
+
+    axa2 = Account(name="Banque Direct - Titre",
+                   account_number="508TI00085561050EUR",
+                   type="Titre", bank_name="Bourse Direct")
+    bnp1 = Account(name="Banque Direct - PEA",
+                   account_number="508TI00083401569EUR",
+                   type="PEA", bank_name="Bourse Direct")
+
+    bnp2 = Account(name="Banque Direct - Titre",
+                   account_number="508TI00085561050EUR",
+                   type="Titre", bank_name="Bourse Direct")
+    wize1 = Account(name="Banque Direct - PEA",
+                    account_number="508TI00083401569EUR",
+                    type="PEA", bank_name="Bourse Direct")
+
+    wize2 = Account(name="Banque Direct - Titre",
+                    account_number="508TI00085561050EUR",
+                    type="Titre", bank_name="Bourse Direct")
+    n26 = Account(name="Banque Direct - PEA",
+                  account_number="508TI00083401569EUR",
+                  type="PEA", bank_name="Bourse Direct")
+
+    swisslife = Account(name="Banque Direct - Titre",
+                        account_number="508TI00085561050EUR",
+                        type="Titre", bank_name="Bourse Direct")
+    amundi = Account(name="Banque Direct - Titre",
+                     account_number="508TI00085561050EUR",
+                     type="Titre", bank_name="Bourse Direct")
+    morganstanley = Account(name="Banque Direct - Titre",
+                            account_number="508TI00085561050EUR",
+                            type="Titre", bank_name="Bourse Direct")
     #
     # Stocks
     #
-    stock1 = Stock(name="3 D SYS.PROV.REGPT(NYSE)", symbol="DDD",
-                   market="NYSE", qty=50,
-                   purchase_price=0.0,
-                   currency="DOLLAR")
-    stock2 = Stock(name="OVH GROUPE", symbol="OVH",
-                   market="EURONEXT", qty=35,
-                   purchase_price=0.0,
-                   currency="EUR")
-    stock3 = Stock(name="PROTO LABS(NYSE)", symbol="PRLB",
-                   market="NYSE", qty=20,
-                   purchase_price=0.0,
-                   currency="DOLLAR")
-    stock4 = Stock(name="SALESFORCE.COM(NYSE)", symbol="CRM",
-                   market="NYSE", qty=5,
-                   purchase_price=0.0,
-                   currency="DOLLAR")
+    stock1 = Stock(
+        order_number="US7437131094",
+        name="PROTO LABS", symbol="PRLB",
+        market="NYSE", qty=20,
+        purchase_date="2022/01/07",
+        unit_purchase_price=51.85,
+        change_rate=1.130594800,
+        currency="DOLLAR",
+        fees=8.5,
+        currency_fees="EUR",
+        account= bd2
+    )
+    stock2 = Stock(
+        order_number="FR0014005HJ9",
+        name="OVH GROUPE", symbol="OVH",
+        market="EURONEXT", qty=35,
+        purchase_date="2022/01/07",
+        purchase_price=26.825,
+        currency="EUR",
+        fees=1.90,
+        currency_fees="EUR",
+        account= bd2
+    )
+    stock3 = Stock(
+        order_number="US88554D2053",
+        name="3 D SYS.PROV.REGPT", symbol="DDD",
+        market="NYSE", qty=50,
+        purchase_date="2022/01/07",
+        purchase_price=20.0499,
+        change_rate=1.130594800,
+        currency="DOLLAR",
+        fees=8.5,
+        currency_fees="EUR",
+        account= bd2
+    )
+    stock4 = Stock(
+        order_number="US79466L3024",
+        name="SALESFORCE.COM(NYSE)", symbol="CRM",
+        market="NYSE", qty=5,
+        purchase_date="2022/01/07",
+        purchase_price=226.96,
+        change_rate=1.130594800,
+        currency="DOLLAR",
+        fees=8.5,
+        currency_fees="EUR",
+        account= bd2
+    )
 
     try:
-        await Account.insert_many([bd1, bd2])
-        await Stock.insert_many([stock1, stock2,stock3,stock4])
+        await bd1.insert()
+        await bd2.insert()
+        #await stock1.insert()
+        #await Account.insert_many([bd1, bd2])
+        await stock1.insert()
+        await stock2.insert()
+        await stock3.insert()
+        await stock4.insert()
+        #await Stock.insert_many([stock1, stock2, stock3, stock4])
     except BulkWriteError as err:
         print("================================")
         print(f"Unexpected {err=}, {type(err)=}")
@@ -178,8 +259,9 @@ async def init():
     display_accounts(accounts)
     stocks = await Stock.find().to_list()
 
-
     display_stocks(stocks)
+    
+    stock = await Stock.find(Stock.symbol == "DDD")
 
 
 # asyncio.run(example())
@@ -189,8 +271,8 @@ async def main():
     await init()
 
 
-asyncio.get_event_loop().run_until_complete(main())
-#asyncio.run(main())
+#asyncio.get_event_loop().run_until_complete(main())
+asyncio.run(main())
 
 
 # if __name__ == "__main__":
