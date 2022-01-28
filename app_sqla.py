@@ -13,101 +13,30 @@ from sqlalchemy.orm import sessionmaker
 import pandas as pd
 import enum
 
-#
-# SQLAlchemy Model
-#
-mapper_registry = registry()
-
-
-@mapper_registry.mapped
-class Account:
-    __tablename__ = "account"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    account_number = Column(String)
-    type = Column(String)
-    bank_name = Column(String)
-    last_update = Column(DateTime)
-
-    def __repr__(self):
-        return "<Account(%r, %r)>" % (self.name, self.bank_name)
-
-
-@mapper_registry.mapped
-class Stock:
-    __tablename__ = "stock"
-
-    id = Column(Integer, primary_key=True)
-    order_number = Column(String)
-    name = Column(String)
-    symbol = Column(String)
-    market = Column(String)
-    qty = Column(Float)
-    purchase_date = Column(DateTime)
-    unit_purchase_price = Column(String)
-    purchase_change_rate = Column(String)
-    #currency = Column(enum.Enum('EUR', 'DOLLAR'))
-    currency = Column(String)
-    fees = Column(String)
-    currency_fees = Column(String)
-
-    def __repr__(self):
-        return "<Stock(%r, %r)>" % (self.name, self.qty)
+from model import Account, Stock, mapper_registry
+from setup_db import *
 
 
 #
-# Accounts
+# Setup SQLAchemy
 #
-bd1 = Account(
-    name="Banque Direct - PEA",
-    account_number="508TI00083401569EUR",
-    type="PEA",
-    bank_name="Bourse Direct",
-    last_update=datetime.datetime(2021, 1, 10)
-)
-bd2 = Account(
-    name="Banque Direct - PEA",
-    account_number="508TI00083401569EUR",
-    type="PEA",
-    bank_name="Bourse Direct",
-    last_update=datetime.datetime(2022, 1, 10)
-)
-#
-# Stocks
-#
-
-stock1 = Stock(
-    order_number="US7437131094",
-    name="PROTO LABS", symbol="PRLB",
-    market="NYSE", qty=20,
-    purchase_date=datetime.datetime(2022, 1, 7),
-    unit_purchase_price=51.85,
-    purchase_change_rate=1.130594800,
-    currency="DOLLAR",
-    fees=8.5,
-    currency_fees="EUR",
-)
-
-
+#mapper_registry = registry()
 engine = create_engine("sqlite:///:memory:", echo=True, future=True)
 with engine.begin() as connection:
     mapper_registry.metadata.create_all(connection)
 
 Session = sessionmaker(bind=engine, future=True)
 session = Session()
-session.add_all(
-    [
-        bd1, bd2,
-        stock1
-    ]
-)
-#session.add(bd1)
-#session.add(bd2)
-#session.add(stock1)
+
+#session.commit()
+#
+fill_bd(session)
+
 
 select_statement = select(Account).filter_by(bank_name="Bourse Direct")
 result = session.execute(select_statement)
+for account_obj in result.scalars():
+    print(account_obj)
 
 # meta = MetaData()
 
