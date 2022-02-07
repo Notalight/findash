@@ -1,0 +1,480 @@
+import datetime
+from statistics import pvariance
+from sqlalchemy import DateTime, Float, create_engine, text, select
+from sqlalchemy import MetaData
+from sqlalchemy import Table, Column, Integer, String
+from sqlalchemy.orm import registry
+from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import sessionmaker
+
+import enum
+
+import pandas as pd
+
+from rich import print
+import rich
+from rich.console import Console
+
+
+
+#
+# SQLAlchemy Model
+#
+mapper_registry = registry()
+
+@mapper_registry.mapped
+class Account:
+    __tablename__ = "account"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    account_number = Column(String)
+    type = Column(String)
+    bank_name = Column(String)
+    last_update = Column(DateTime)
+
+    def __repr__(self):
+        return "<Account(%r, %r)>" % (self.name, self.bank_name)
+
+
+@mapper_registry.mapped
+class Stock:
+    __tablename__ = "stock"
+
+    id = Column(Integer, primary_key=True)
+    order_number = Column(String)
+    name = Column(String)
+    symbol = Column(String)
+    market = Column(String)
+    qty = Column(Float)
+    purchase_date = Column(DateTime)
+    unit_purchase_price = Column(String)
+    purchase_change_rate = Column(String)
+    #currency = Column(enum.Enum('EUR', 'DOLLAR'))
+    currency = Column(String)
+    fees = Column(String)
+    currency_fees = Column(String)
+
+    def __repr__(self):
+        return "<Stock(%r, %r)>" % (self.name, self.qty)
+
+@mapper_registry.mapped
+class Loan:
+    __tablename__ = "loan"
+    id = Column(Integer, primary_key=True)
+    loan_number = Column(String)
+    name = Column(String)
+    description = Column(String)
+    pv = Column(Float)
+    rate = Column(Float)
+    nper = Column(Float)
+    start_date = Column(DateTime)
+
+    def __repr__(self):
+        return "<Loan(%r, %r)>" % (self.name, self.description)
+
+
+@mapper_registry.mapped
+class Asset:
+    __tablename__ = "asset"
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    description = Column(String)
+    type = Column(String)
+    acquisition_price = Column(Float)
+    acquisition_date = Column(DateTime)
+    estimation_price = Column(Float)
+
+    def __repr__(self):
+        return "<Asset(%r, %r)>" % (self.name, self.description)
+
+
+#
+# Helper functions
+#
+
+#
+# format currency to display on console
+#
+def format_currency(value, currency):
+    match currency:
+        case 'EUR':
+            if value >= 0:
+                return "{:,.2f} €".format(value)
+            else:
+                return "({:,.2f}) €".format(-value)
+        case 'DOLLAR':
+            if value >= 0:
+                return "{:,.2f} $".format(value)
+            else:
+                return "({:,.2f}) $".format(-value)
+        case _:
+            return "Error conversion"
+
+def display_accounts(accounts):
+    # Format table to show
+    table = rich.table.Table(title="Accounts")
+    table.add_column("RÃ©fÃ©rence", justify="right",
+                     style="cyan", no_wrap=True)
+    table.add_column("Nom", style="magenta")
+    table.add_column("Banque", style="magenta")
+    table.add_column("Type", style="magenta")
+    table.add_column("Valeur", justify="right", style="green")
+    #
+    for account in accounts:
+        table.add_row(account.account_number, account.name, account.bank_name, account.type,
+                      format_currency(account.amount, account.currency))
+    # Display result
+    # TODO why use console
+    console = Console()
+    console.print(table)
+
+
+def display_stocks(stocks):
+    # Format table to show
+    table = rich.table.Table(title="Stocks")
+    table.add_column("Symbol", justify="right", style="cyan", no_wrap=True)
+    table.add_column("Name", style="magenta")
+    table.add_column("Market", style="magenta")
+    table.add_column("Qty", style="magenta")
+    table.add_column("Value", justify="right", style="green")
+    #
+    for stock in stocks:
+        table.add_row(stock.symbol, stock.name, stock.market,
+                      "{:,.2f}".format(stock.qty),
+                      format_currency(stock.purchase_price, stock.currency))
+    # Display result
+    # TODO why use console
+    console = Console()
+    console.print(table)
+
+    def convert_to_dataframe(stocks):
+        symbols = []
+        quantities = []
+        for stock in stocks:
+            symbols.append(stock.symbol)
+            quantities.append(stock.qty)
+        stocks_list = [symbols, quantities]
+        df = pd.DataFrame(stocks_list).transpose()
+        df.columns = ['ticker', 'qty']
+        #df.columns = ['ticker', 'qty','unit price', 'currency', 'total']
+        #print (df)
+        return df
+
+
+
+        
+# class Transaction(Document):
+#     title = StringField(required=True, unique_with = ['bank_account','operation_date','debit','credit'])
+#     bank_account = ReferenceField(Account, required=True)
+#     operation_date = DateTimeField(required=True)
+#     description = StringField()
+#     debit = DecimalField(required=True)
+#     credit = DecimalField(required=True)
+#     devise = EnumField(Devise, default=Devise.EURO)
+
+#     meta = {
+#         'allow_inheritance': True,
+#     #     'indexes': [
+#     #         {'fields': ('title', 'bank_account','operation_date','debit','credit'), 'unique': True}
+#     #     ]
+#     }
+
+
+
+
+
+
+
+
+from model import Account, Stock, Loan, Asset, mapper_registry
+import datetime
+
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, select
+
+
+#
+# Accounts
+#
+bd1 = Account(
+    name="Banque Direct - PEA",
+    account_number="508TI00083401569EUR",
+    type="PEA",
+    bank_name="Bourse Direct",
+    last_update=datetime.datetime(2021, 1, 10)
+)
+bd2 = Account(
+    name="Banque Direct - PEA",
+    account_number="508TI00083401569EUR",
+    type="PEA",
+    bank_name="Bourse Direct",
+    last_update=datetime.datetime(2022, 1, 10)
+)
+
+#
+# Loans
+#
+loan1 = Loan(
+    loan_number="AX05899559",
+    name="0001338324701 ALTIMO FIX",
+    description="Prêt Maison principale",
+    pv=-67190.45,
+    rate=0.0115,
+    nper=66,
+    start_date=datetime.datetime(2021, 2, 5)
+)
+
+loan2 = Loan(
+    loan_number="00002681303",
+    name="CCHQ 65080290572",
+    description="Prêt Appt. Viry Chatillon",
+    pv=-190021,
+    rate=0.0063,
+    nper=120,
+    start_date=datetime.datetime(2021, 7, 22)
+)
+
+loan3 = Loan(
+    loan_number="00002681285",
+    name="CCHQ 65080290262",
+    description="Prêt Appt.  Crépy en Valois",
+    pv=-68325,
+    rate=0.0063,
+    nper=96,
+    start_date=datetime.datetime(2021, 8, 19)
+)
+
+
+#
+# Assets
+#
+asset1 = Asset(
+    name="Appt Crépy",
+    description="Appt Crépy",
+    type="appt",
+    acquisition_price=110000,
+    acquisition_date =datetime.datetime(2017, 7, 1),
+    estimation_price = 130000
+)
+
+asset2 = Asset(
+    name="Maison Igny",
+    description="Maison Igny",
+    type="maison",
+    acquisition_price=740000,
+    acquisition_date =datetime.datetime(2021, 7, 1),
+    estimation_price = 950000
+)
+
+asset3 = Asset(
+    name="Appt Viry",
+    description="Appt Viry",
+    type="appt",
+    acquisition_price=210000,
+    acquisition_date =datetime.datetime(2021, 7, 1),
+    estimation_price = 210000
+)
+
+
+#
+# Stocks
+#
+
+stock1 = Stock(
+    order_number="US7437131094",
+    name="PROTO LABS", symbol="PRLB",
+    market="NYSE", qty=20,
+    purchase_date=datetime.datetime(2022, 1, 7),
+    unit_purchase_price=51.85,
+    purchase_change_rate=1.130594800,
+    currency="DOLLAR",
+    fees=8.5,
+    currency_fees="EUR",
+)
+
+stock2 = Stock(
+    order_number="FR0014005HJ9",
+    name="OVH GROUPE", symbol="OVH",
+    market="EURONEXT", qty=35,
+    purchase_date=datetime.datetime(2022, 1, 7),
+    unit_purchase_price=26.825,
+    currency="EUR",
+    fees=1.90,
+    currency_fees="EUR",
+)
+
+stock3 = Stock(
+    order_number="US88554D2053",
+    name="3 D SYS.PROV.REGPT", symbol="DDD",
+    market="NYSE", qty=50,
+    purchase_date=datetime.datetime(2022, 1, 7),
+    unit_purchase_price=20.0499,
+    purchase_change_rate=1.130594800,
+    currency="DOLLAR",
+    fees=8.5,
+    currency_fees="EUR",
+)
+
+stock4 = Stock(
+    order_number="US79466L3024",
+    name="SALESFORCE.COM(NYSE)", symbol="CRM",
+    market="NYSE", qty=5,
+    purchase_date=datetime.datetime(2022, 1, 7),
+    unit_purchase_price=226.96,
+    purchase_change_rate=1.130594800,
+    currency="DOLLAR",
+    fees=8.5,
+    currency_fees="EUR",
+)
+
+#
+#
+#
+
+
+def populate(session):
+
+    session.add_all(
+        [
+            bd1, bd2,
+            stock1, stock2, stock3, stock4,
+            loan1, loan2, loan3,
+            asset1, asset2, asset3
+        ]
+    )
+
+    session.commit()
+
+    select_statement = select(Account)
+    result = session.execute(select_statement)
+    for account_obj in result.scalars():
+        print("Account : ", account_obj)
+
+    select_statement = select(Stock)
+    result = session.execute(select_statement)
+    for stock_obj in result.scalars():
+        print("Stock : ", stock_obj)
+
+    select_statement = select(Loan)
+    result = session.execute(select_statement)
+    for loan_obj in result.scalars():
+        print("Loan : ", loan_obj)
+
+    select_statement = select(Asset)
+    result = session.execute(select_statement)
+    for asset_obj in result.scalars():
+        print("Asset : ", asset_obj)
+
+
+#
+#
+#
+
+def create_db_and_tables(db_file_name):
+    engine = create_engine(
+        f"sqlite:///{db_file_name}", echo=False, future=True)
+    with engine.begin() as connection:
+        mapper_registry.metadata.create_all(connection)
+
+    Session = sessionmaker(bind=engine, future=True)
+    session = Session()
+    return session
+
+
+
+
+
+
+
+
+
+
+
+import datetime
+
+from sqlalchemy import DateTime, Float, create_engine, text, select
+from sqlalchemy import MetaData
+from sqlalchemy import Table, Column, Integer, String
+from sqlalchemy.orm import registry
+from sqlalchemy.orm import relationship
+from sqlalchemy import text
+from sqlalchemy import Column, Integer, String
+
+import pandas as pd
+from pandas_datareader import test
+import warnings
+import matplotlib.pyplot as plt
+import numpy as np
+
+import yfinance as yf
+import quandl
+
+
+import enum
+
+from setup_db import *
+
+QUANDL_KEY = "zSQgVZXfyBf_ek_efub5"
+quandl.ApiConfig.api_key = QUANDL_KEY
+
+#
+# Setup SQLAchemy
+#
+#mapper_registry = registry()
+# engine = create_engine("sqlite:///:memory:", echo=True, future=True)
+# with engine.begin() as connection:
+#     mapper_registry.metadata.create_all(connection)
+
+# Session = sessionmaker(bind=engine, future=True)
+# session = Session()
+
+session = create_db_and_tables("test.db")
+print("Populate...")
+populate(session)
+
+#
+df_yahoo = yf.download(['CRM'   , 'DDD', 'PRLB'],
+                       start='2018-01-01',
+                       end='2022-1-28',
+                       # auto_adjust=True,
+                       progress=False)
+
+df = df_yahoo.loc[:, ['Adj Close']]
+df.rename(columns={'Adj Close': 'adj_close'}, inplace=True)
+
+# Download inflation data from Quandl
+dates = pd.date_range(
+    start='2018-01-01',
+    end='2022-01-28'
+)
+
+# Download inflation data from Quandl
+df_cpi = quandl.get(dataset='RATEINF/CPI_FRA', 
+                    start_date='2018-01-01', 
+                    end_date='2022-1-28')
+df_cpi.rename(columns={'Value':'cpi'}, inplace=True)
+# Create a DataFrame with all possible dates and left join the prices on it
+df_all_dates = pd.DataFrame(index=pd.date_range(start='2018-01-01',
+                                                end='2022-01-28'))
+df = df_all_dates.join(df[['adj_close']], how='left') \
+                 .fillna(method='ffill') \
+                 .asfreq('M')
+# Merge inflation data to prices:              
+df_merged = df.join(df_cpi, how='left')
+# Calculate simple returns and inflation rate
+df_merged['simple_rtn'] = df_merged.adj_close.pct_change()
+df_merged['inflation_rate'] = df_merged.cpi.pct_change()
+# Adjust returns for inflation
+df_merged['real_rtn'] = (df_merged.simple_rtn + 1) / (df_merged.inflation_rate + 1) - 1
+df_merged.head()
+
+# result = pd.read_sql(text('SELECT name FROM students'), conn)
+# print(result)
+# #with engine.connect() as conn:
+# #    result = conn.execute(ins)
+# #    for item in result.cursor():
+# #        print(type(item))
