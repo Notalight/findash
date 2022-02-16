@@ -6,6 +6,8 @@ from pydantic import ValidationError
 import numpy as np
 import numpy_financial as npf
 import pandas as pd
+from matplotlib import pyplot as plt
+import seaborn as sns
 
 import rich
 #from rich import print
@@ -117,6 +119,7 @@ def get_df_from_loan(loan: Loan):
 
 
 
+
 def load_portfolio(path: str):
     portfolio_json = open(path, 'r').read()
     portfolio = Portfolio.parse_raw(portfolio_json)
@@ -128,8 +131,17 @@ def save_portfolio(path: str):
 
 
 portfolio = load_portfolio('portfolio.json')
-loan1 = get_df_from_loan(portfolio.get_loan_list()[0])
-loan1.drop('ppmt', inplace=True, axis=1)
+loan1 = get_df_from_loan(portfolio.get_loan_list()[0])[["pmt"]]
+loan2 = get_df_from_loan(portfolio.get_loan_list()[1])[["pmt"]]
+loan3 = get_df_from_loan(portfolio.get_loan_list()[2])[["pmt"]]
+mg = pd.concat([loan1, loan2, loan3],axis=1).fillna(0.0)
+#mg.insert(loc=3,column="total", value=0.0)
+mg['total'] = mg.sum(numeric_only=True, axis=1)
+#
+print(mg)
+
+# Seaborn Plotting
+sns.lmplot(y='total', data=mg)
 
 #portfolio_json = open('portfolio.json', 'r').read()
 # jsonpickle.set_preferred_backend('simplejson')
