@@ -12,11 +12,23 @@ import enum
 
 from model import *
 
+def show_values(portfolio: Portfolio):
+    stocks = portfolio.get_stock_list()
+    for stock in stocks:
+        df_yahoo = yf.download(['CRM'   , 'DDD', 'PRLB'],
+                       start='2018-01-01',
+                       end='2022-1-28',
+                       # auto_adjust=True,
+                       progress=False)
+        
 #
 # load portfolio
 #
 portfolio = load_portfolio('portfolio.json')
 portfolio.show_accounts()
+
+
+
 # 
 # Quandl : keys
 #
